@@ -71,7 +71,7 @@ fn convert_heic(
             to_path,
             ],
         ),
-        ImageConverter::Imagemagick => {
+        ImageConverter::Imagemagick(_) => {
             let formatted_from = format!("{from_path}[0]");
             let formatted_to = format!("{}:{to_path}", output_image_type.to_str());
             run_command(
@@ -88,17 +88,9 @@ fn is_heic_attachment(mime_type: &MediaType, path: &Path) -> bool {
         MediaType::Image(subtype)
             if subtype.eq_ignore_ascii_case("heic") || subtype.eq_ignore_ascii_case("heif")
     );
-<<<<<<< HEAD
-    let is_heic_ext = path
-        .extension()
-        .and_then(|ext| ext.to_str())
-        .is_some_and(|ext| ext.eq_ignore_ascii_case("heic") || ext.eq_ignore_ascii_case("heif"));
-=======
     let is_heic_ext = path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| {
         ext.eq_ignore_ascii_case("heic") || ext.eq_ignore_ascii_case("heif")
     });
->>>>>>> 0ae60f9 (WIP: Use ImageMagick for HEIC/HEIF on Linux)
-
     is_heic_mime || is_heic_ext
 }
 
