@@ -89,8 +89,8 @@ impl<'a> Exporter<'a> for JSON<'a> {
         for message in messages {
             let mut msg = Message::extract(message)?;
             // Avoid duplicate rowids
-            // Generate textual content
-            let _ = msg.generate_text(self.config.data_source.db());
+            // Generate textual content (use legacy generator to match other exporters)
+            let _ = msg.generate_text_legacy(self.config.data_source.db());
 
             // Build sender participant
             let sender = if msg.is_from_me {
@@ -157,7 +157,7 @@ impl<'a> Exporter<'a> for JSON<'a> {
             let dt = MessageDto {
                 rowid: msg.rowid,
                 guid: msg.guid.clone(),
-                date_iso: get_local_time(&msg.date, &self.config.offset)
+                date_iso: get_local_time(msg.date, self.config.offset)
                     .map(|dt| dt.to_rfc3339())
                     .unwrap_or_default(),
                 is_from_me: msg.is_from_me,
