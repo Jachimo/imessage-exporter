@@ -1,4 +1,6 @@
-# imessage-exporter
+# imessage-exporter (Jachimo's fork)
+
+A fork of [ReagentX/imessage-exporter](https://github.com/ReagentX/imessage-exporter) with some enhancements, including name-based export files, JSON export, and some other stuff.
 
 This crate provides both a library to interact with iMessage data as well as a binary that can perform some useful read-only operations using that data. The aim of this project is to provide the most comprehensive and accurate representation of iMessage data available.
 
