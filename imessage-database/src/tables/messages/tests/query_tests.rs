@@ -18,7 +18,8 @@ mod exclude_recoverable_tests {
         context.set_start("2020-01-01").unwrap();
 
         let statement = Message::generate_filter_statement(&context, false);
-        assert_eq!(statement, "WHERE  m.date >= 599558400000000000");
+        let expected = format!("WHERE  m.date >= {}", context.start.unwrap());
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -27,7 +28,8 @@ mod exclude_recoverable_tests {
         context.set_end("2020-01-01").unwrap();
 
         let statement = Message::generate_filter_statement(&context, false);
-        assert_eq!(statement, "WHERE  m.date <= 599558400000000000");
+        let expected = format!("WHERE  m.date <= {}", context.end.unwrap());
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -37,10 +39,12 @@ mod exclude_recoverable_tests {
         context.set_end("2020-02-02").unwrap();
 
         let statement = Message::generate_filter_statement(&context, false);
-        assert_eq!(
-            statement,
-            "WHERE  m.date >= 599558400000000000 AND  m.date <= 602323200000000000"
+        let expected = format!(
+            "WHERE  m.date >= {} AND  m.date <= {}",
+            context.start.unwrap(),
+            context.end.unwrap()
         );
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -60,10 +64,12 @@ mod exclude_recoverable_tests {
         context.set_selected_chat_ids(BTreeSet::from([1, 2, 3]));
 
         let statement = Message::generate_filter_statement(&context, false);
-        assert_eq!(
-            statement,
-            "WHERE  m.date >= 599558400000000000 AND  m.date <= 602323200000000000 AND  c.chat_id IN (1, 2, 3)"
+        let expected = format!(
+            "WHERE  m.date >= {} AND  m.date <= {} AND  c.chat_id IN (1, 2, 3)",
+            context.start.unwrap(),
+            context.end.unwrap()
         );
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -127,7 +133,8 @@ mod include_recoverable_tests {
         context.set_start("2020-01-01").unwrap();
 
         let statement = Message::generate_filter_statement(&context, true);
-        assert_eq!(statement, "WHERE  m.date >= 599558400000000000");
+        let expected = format!("WHERE  m.date >= {}", context.start.unwrap());
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -136,7 +143,8 @@ mod include_recoverable_tests {
         context.set_end("2020-01-01").unwrap();
 
         let statement = Message::generate_filter_statement(&context, true);
-        assert_eq!(statement, "WHERE  m.date <= 599558400000000000");
+        let expected = format!("WHERE  m.date <= {}", context.end.unwrap());
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -146,10 +154,12 @@ mod include_recoverable_tests {
         context.set_end("2020-02-02").unwrap();
 
         let statement = Message::generate_filter_statement(&context, true);
-        assert_eq!(
-            statement,
-            "WHERE  m.date >= 599558400000000000 AND  m.date <= 602323200000000000"
+        let expected = format!(
+            "WHERE  m.date >= {} AND  m.date <= {}",
+            context.start.unwrap(),
+            context.end.unwrap()
         );
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -172,10 +182,12 @@ mod include_recoverable_tests {
         context.set_selected_chat_ids(BTreeSet::from([1, 2, 3]));
 
         let statement = Message::generate_filter_statement(&context, true);
-        assert_eq!(
-            statement,
-            "WHERE  m.date >= 599558400000000000 AND  m.date <= 602323200000000000 AND  (c.chat_id IN (1, 2, 3) OR d.chat_id IN (1, 2, 3))"
+        let expected = format!(
+            "WHERE  m.date >= {} AND  m.date <= {} AND  (c.chat_id IN (1, 2, 3) OR d.chat_id IN (1, 2, 3))",
+            context.start.unwrap(),
+            context.end.unwrap()
         );
+        assert_eq!(statement, expected);
     }
 
     #[test]
@@ -321,7 +333,8 @@ ORDER BY
         let filters = Message::generate_filter_statement(&context, true);
 
         let query_string = query_parts::ios_16_newer_query(Some(&filters));
-        let expected = "\nSELECT
+        let expected = format!(
+            "\nSELECT
     rowid, guid, text, service, handle_id, destination_caller_id, subject, date, date_read, date_delivered, is_from_me, is_read, item_type, other_handle, share_status, share_direction, group_title, group_action_type, associated_message_guid, associated_message_type, balloon_bundle_id, expressive_send_style_id, thread_originator_guid, thread_originator_part, date_edited, associated_message_emoji,
     c.chat_id,
     (SELECT COUNT(*) FROM message_attachment_join a WHERE m.ROWID = a.message_id) as num_attachments,
@@ -331,9 +344,10 @@ FROM
     message as m
 LEFT JOIN chat_message_join as c ON m.ROWID = c.message_id
 LEFT JOIN chat_recoverable_message_join as d ON m.ROWID = d.message_id
-WHERE  m.date >= 599558400000000000 AND  (c.chat_id IN (1, 2, 3) OR d.chat_id IN (1, 2, 3))
+{filters}
 ORDER BY
-    m.date;\n";
+    m.date;\n"
+        );
         assert_eq!(query_string, expected);
     }
 
@@ -383,7 +397,8 @@ ORDER BY
         let filters = Message::generate_filter_statement(&context, false);
 
         let query_string = query_parts::ios_14_15_query(Some(&filters));
-        let expected = "\nSELECT
+        let expected = format!(
+            "\nSELECT
     *,
     c.chat_id,
     (SELECT COUNT(*) FROM message_attachment_join a WHERE m.ROWID = a.message_id) as num_attachments,
@@ -392,9 +407,10 @@ ORDER BY
 FROM
     message as m
 LEFT JOIN chat_message_join as c ON m.ROWID = c.message_id
-WHERE  m.date >= 599558400000000000 AND  c.chat_id IN (1, 2, 3)
+{filters}
 ORDER BY
-    m.date;\n";
+    m.date;\n"
+        );
         assert_eq!(query_string, expected);
     }
 
@@ -444,7 +460,8 @@ ORDER BY
         let filters = Message::generate_filter_statement(&context, false);
 
         let query_string = query_parts::ios_13_older_query(Some(&filters));
-        let expected = "\nSELECT
+        let expected = format!(
+            "\nSELECT
     *,
     c.chat_id,
     (SELECT COUNT(*) FROM message_attachment_join a WHERE m.ROWID = a.message_id) as num_attachments,
@@ -453,9 +470,10 @@ ORDER BY
 FROM
     message as m
 LEFT JOIN chat_message_join as c ON m.ROWID = c.message_id
-WHERE  m.date >= 599558400000000000 AND  c.chat_id IN (1, 2, 3)
+{filters}
 ORDER BY
-    m.date;\n";
+    m.date;\n"
+        );
         assert_eq!(query_string, expected);
     }
 }

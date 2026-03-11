@@ -360,42 +360,44 @@ impl Attachment {
         custom_attachment_root: Option<&str>,
     ) -> Option<String> {
         if let Some(mut path_str) = self.filename.clone() {
-            // Apply custom attachment path, if provided
-            if let Some(custom_attachment_path) = custom_attachment_root {
-                // When the user provided --attachment-root, prefer mapping the path by replacing
-                // everything before the first attachment-like directory ("Attachments", "Parts", "StickerCache")
-                // with the provided custom root. This handles macOS absolute paths, device-style paths,
-                // and backup roots in a consistent manner.
-                let tokens = ["Attachments", "Parts", "StickerCache"];
-                let mut replaced = false;
-                for token in tokens {
-                    if let Some(idx) = path_str.find(token) {
-                        // Suffix including the token (e.g., "Attachments/0a/...")
-                        let suffix = &path_str[idx..];
-                        // Build the resultant path safely using PathBuf to avoid duplicate separators
-                        let mut pb = PathBuf::from(custom_attachment_path);
-                        // Remove leading slash from suffix before pushing
-                        let suffix_trimmed = suffix.strip_prefix('/').unwrap_or(suffix);
-                        pb.push(suffix_trimmed);
-                        path_str = pb.to_string_lossy().into_owned();
-                        replaced = true;
-                        break;
-                    }
-                }
-                if !replaced {
-                    // Fallback: if the path contains "/Library/SMS", take the path after that and append
-                    if let Some(idx) = path_str.find("/Library/SMS") {
-                        let suffix = &path_str[idx + "/Library/SMS".len()..];
-                        let mut pb = PathBuf::from(custom_attachment_path);
-                        let suffix_trimmed = suffix.strip_prefix('/').unwrap_or(suffix);
-                        pb.push(suffix_trimmed);
-                        path_str = pb.to_string_lossy().into_owned();
-                    }
-                }
-            }
-
-            // Apply custom attachment path replacement for macOS-style prefixes
+            // Apply custom attachment path, if provided. For iOS backups we intentionally do NOT
+            // rewrite paths before hashing, because the backup filename is derived from the original
+            // path string. Only macOS-style databases should be rewritten.
             if matches!(platform, Platform::macOS) {
+                if let Some(custom_attachment_path) = custom_attachment_root {
+                    // When the user provided --attachment-root, prefer mapping the path by replacing
+                    // everything before the first attachment-like directory ("Attachments", "Parts", "StickerCache")
+                    // with the provided custom root. This handles macOS absolute paths, device-style paths,
+                    // and backup roots in a consistent manner.
+                    let tokens = ["Attachments", "Parts", "StickerCache"];
+                    let mut replaced = false;
+                    for token in tokens {
+                        if let Some(idx) = path_str.find(token) {
+                            // Suffix including the token (e.g., "Attachments/0a/...")
+                            let suffix = &path_str[idx..];
+                            // Build the resultant path safely using PathBuf to avoid duplicate separators
+                            let mut pb = PathBuf::from(custom_attachment_path);
+                            // Remove leading slash from suffix before pushing
+                            let suffix_trimmed = suffix.strip_prefix('/').unwrap_or(suffix);
+                            pb.push(suffix_trimmed);
+                            path_str = pb.to_string_lossy().into_owned();
+                            replaced = true;
+                            break;
+                        }
+                    }
+                    if !replaced {
+                        // Fallback: if the path contains "/Library/SMS", take the path after that and append
+                        if let Some(idx) = path_str.find("/Library/SMS") {
+                            let suffix = &path_str[idx + "/Library/SMS".len()..];
+                            let mut pb = PathBuf::from(custom_attachment_path);
+                            let suffix_trimmed = suffix.strip_prefix('/').unwrap_or(suffix);
+                            pb.push(suffix_trimmed);
+                            path_str = pb.to_string_lossy().into_owned();
+                        }
+                    }
+                }
+
+                // Apply custom attachment path replacement for macOS-style prefixes
                 if let Some(custom_attachment_path) = custom_attachment_root {
                     let prefix = if path_str.starts_with(DEFAULT_MESSAGES_ROOT) {
                         Some(DEFAULT_MESSAGES_ROOT)
